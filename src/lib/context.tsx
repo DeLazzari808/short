@@ -1,13 +1,13 @@
 'use client';
 
-import { createContext, useContext, useCallback, useState, ReactNode } from 'react';
-import { AppState, DigitalAsset, PredictionType, SwipeDirection } from '@/types';
+import { createContext, useContext, useCallback, useState, useRef, ReactNode } from 'react';
+import { AppState, DigitalAsset, PredictionType, SwipeDirection, SwipeRecord } from '@/types';
 import { createInitialState, makePrediction, performSwipe, purchaseAsset } from './store';
 
 interface AppContextType {
   state: AppState;
   predict: (type: PredictionType, staked: number) => void;
-  swipe: (direction: SwipeDirection) => ReturnType<typeof performSwipe>['record'];
+  swipe: (direction: SwipeDirection) => SwipeRecord;
   buyAsset: (asset: DigitalAsset) => boolean;
   resetGame: () => void;
 }
@@ -16,32 +16,28 @@ const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(createInitialState);
+  // Use ref to always have latest state for synchronous reads
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   const predict = useCallback((type: PredictionType, staked: number) => {
     setState((prev) => makePrediction(prev, type, staked));
   }, []);
 
   const swipe = useCallback((direction: SwipeDirection) => {
-    let record: ReturnType<typeof performSwipe>['record'] | null = null;
-    setState((prev) => {
-      const result = performSwipe(prev, direction);
-      record = result.record;
-      return result.state;
-    });
-    return record!;
+    // Compute result from current state synchronously
+    const result = performSwipe(stateRef.current, direction);
+    setState(result.state);
+    return result.record;
   }, []);
 
   const buyAsset = useCallback((asset: DigitalAsset) => {
-    let success = false;
-    setState((prev) => {
-      const result = purchaseAsset(prev, asset);
-      if (result) {
-        success = true;
-        return result;
-      }
-      return prev;
-    });
-    return success;
+    const result = purchaseAsset(stateRef.current, asset);
+    if (result) {
+      setState(result);
+      return true;
+    }
+    return false;
   }, []);
 
   const resetGame = useCallback(() => {

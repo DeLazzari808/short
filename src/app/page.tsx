@@ -7,13 +7,16 @@ import ProfileCard from '@/components/ProfileCard';
 import PredictionPanel from '@/components/PredictionPanel';
 import SwipeResult from '@/components/SwipeResult';
 import TopBar from '@/components/TopBar';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Heart } from 'lucide-react';
+
+type Phase = 'ready' | 'showing_result';
 
 export default function HomePage() {
   const { state, predict, swipe } = useApp();
+  const [phase, setPhase] = useState<Phase>('ready');
   const [lastResult, setLastResult] = useState<SwipeRecord | null>(null);
-  const [canSwipe, setCanSwipe] = useState(true);
+  // Key to force remount ProfileCard on each new profile
+  const [cardKey, setCardKey] = useState(0);
 
   const currentProfile = state.profiles[state.currentProfileIndex];
   const hasPendingPrediction = state.predictions.some(
@@ -24,16 +27,17 @@ export default function HomePage() {
     predict(type, staked);
   }, [predict]);
 
+  // Called AFTER the card has animated out
   const handleSwipe = useCallback((direction: SwipeDirection) => {
-    if (!canSwipe) return;
-    setCanSwipe(false);
     const record = swipe(direction);
     setLastResult(record);
-  }, [canSwipe, swipe]);
+    setPhase('showing_result');
+  }, [swipe]);
 
   const handleContinue = useCallback(() => {
     setLastResult(null);
-    setCanSwipe(true);
+    setPhase('ready');
+    setCardKey((k) => k + 1);
   }, []);
 
   // No more profiles
@@ -57,38 +61,32 @@ export default function HomePage() {
       {/* Card area */}
       <div className="flex-1 flex flex-col px-4 gap-3">
         <div className="relative flex-1 min-h-[420px]">
-          <AnimatePresence mode="popLayout">
-            <motion.div
-              key={currentProfile.id}
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ x: 300, opacity: 0, rotate: 15 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="absolute inset-0"
-            >
-              <ProfileCard
-                profile={currentProfile}
-                onSwipe={handleSwipe}
-                disabled={!canSwipe}
-              />
-            </motion.div>
-          </AnimatePresence>
+          {phase === 'ready' && (
+            <ProfileCard
+              key={cardKey}
+              profile={currentProfile}
+              onSwipe={handleSwipe}
+              disabled={false}
+            />
+          )}
         </div>
 
-        {/* Prediction panel */}
-        <div className="pb-4">
-          <PredictionPanel
-            points={state.wallet.points}
-            hasPrediction={hasPendingPrediction}
-            profileName={currentProfile.name}
-            onPredict={handlePredict}
-            onSkip={() => {}}
-          />
-        </div>
+        {/* Prediction panel - only when card is visible */}
+        {phase === 'ready' && (
+          <div className="pb-4">
+            <PredictionPanel
+              points={state.wallet.points}
+              hasPrediction={hasPendingPrediction}
+              profileName={currentProfile.name}
+              onPredict={handlePredict}
+              onSkip={() => {}}
+            />
+          </div>
+        )}
       </div>
 
       {/* Result overlay */}
-      {lastResult && (
+      {phase === 'showing_result' && lastResult && (
         <SwipeResult record={lastResult} onContinue={handleContinue} />
       )}
     </div>
