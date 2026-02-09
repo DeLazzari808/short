@@ -1,37 +1,44 @@
-import { PersonalityType, Profile, SwipeAction } from '@/types/game';
+import { UserProfile } from '@/types';
 
-const FIRST_NAMES = [
-  'Luna', 'Kai', 'Nova', 'Rio', 'Sage', 'Zara', 'Axel', 'Ivy', 'Jett', 'Mika',
-  'Aria', 'Dante', 'Elara', 'Felix', 'Gaia', 'Hugo', 'Iris', 'Leo', 'Maya', 'Nico',
-  'Olive', 'Phoenix', 'Quinn', 'Remy', 'Stella', 'Theo', 'Uma', 'Vale', 'Wren', 'Xena',
+const NAMES = [
+  'Sofia', 'Valentina', 'Isabella', 'Camila', 'Mariana',
+  'Gabriela', 'Luiza', 'Beatriz', 'Larissa', 'Juliana',
+  'Amanda', 'Fernanda', 'Letícia', 'Carolina', 'Bianca',
+  'Lucas', 'Gabriel', 'Matheus', 'Rafael', 'Pedro',
+  'Bruno', 'Diego', 'Thiago', 'André', 'Felipe',
+  'Luna', 'Kai', 'Nova', 'Mika', 'Aria',
 ];
 
 const BIOS = [
-  'Coffee addict. Dog lover. Will steal your fries. 🍟',
-  'Looking for someone to watch sunsets with 🌅',
-  'Gym rat by day, Netflix binger by night 💪',
-  'If you can\'t handle me at my worst... fair enough tbh',
-  'Probably taller than you in heels 👠',
-  'Fluent in sarcasm and memes',
-  'Adventurer seeking a co-pilot ✈️',
-  'Here for a good time, not a long time',
-  'My love language is sending memes at 3am',
-  'Looking for my player 2 🎮',
-  'Swipe right if you like bad decisions',
-  'Professional overthinker 🧠',
-  'Will judge you by your music taste 🎵',
-  'Not here for hookups (unless you\'re really cute)',
-  'My therapist says I need to put myself out there',
-  'Can cook minute rice in 58 seconds',
-  'Warning: may spontaneously start dancing',
-  'Emotional availability? In THIS economy?',
-  'Looking for someone to split the bill with 💸',
-  'I peaked in high school and it\'s been downhill since',
+  'living my best life ✨',
+  'coffee first, questions later ☕',
+  'adventure seeker 🌍',
+  'gym + netflix = balance',
+  'music is my therapy 🎵',
+  'dog person. non-negotiable 🐕',
+  'foodie exploring the city 🍕',
+  'here for genuine connections',
+  'sarcasm is my love language',
+  'looking for my partner in crime',
+  'just moved here, show me around?',
+  'photographer 📸 | traveler ✈️',
+  'swipe right if you like bad jokes',
+  'professional overthinker',
+  'let\'s grab drinks and see what happens 🍷',
+  'not here to play games... or am I? 🎲',
+  'sunset chaser 🌅',
+  'can cook, can\'t bake 🍳',
+  'tech nerd by day, artist by night 🎨',
+  'looking for someone to binge-watch with',
 ];
 
-const PERSONALITIES: PersonalityType[] = ['aggressive', 'cautious', 'random', 'mirror', 'contrarian'];
+const INTERESTS_POOL = [
+  'Travel', 'Music', 'Fitness', 'Coffee', 'Photography',
+  'Cooking', 'Movies', 'Gaming', 'Art', 'Dogs',
+  'Hiking', 'Yoga', 'Dancing', 'Books', 'Wine',
+  'Surf', 'Tech', 'Fashion', 'Food', 'Sports',
+];
 
-// Deterministic seeded random for consistent profile generation
 function seededRandom(seed: number): () => number {
   let s = seed;
   return () => {
@@ -40,64 +47,40 @@ function seededRandom(seed: number): () => number {
   };
 }
 
-export function generateProfiles(count: number, seed: number = Date.now()): Profile[] {
-  const rand = seededRandom(seed);
-  const profiles: Profile[] = [];
+export function generateProfiles(count: number = 50): UserProfile[] {
+  const rand = seededRandom(42);
+  const profiles: UserProfile[] = [];
 
   for (let i = 0; i < count; i++) {
-    const nameIndex = Math.floor(rand() * FIRST_NAMES.length);
-    const bioIndex = Math.floor(rand() * BIOS.length);
-    const personalityIndex = Math.floor(rand() * PERSONALITIES.length);
-    const age = 18 + Math.floor(rand() * 17); // 18-34
-
-    // Generate a gradient avatar color
+    const nameIdx = Math.floor(rand() * NAMES.length);
+    const bioIdx = Math.floor(rand() * BIOS.length);
+    const age = 19 + Math.floor(rand() * 13);
     const hue1 = Math.floor(rand() * 360);
-    const hue2 = (hue1 + 40 + Math.floor(rand() * 80)) % 360;
+    const hue2 = (hue1 + 30 + Math.floor(rand() * 90)) % 360;
+    const distance = (1 + Math.floor(rand() * 25)).toString();
+    const verified = rand() > 0.6;
+
+    // Pick 2-4 random interests
+    const numInterests = 2 + Math.floor(rand() * 3);
+    const shuffled = [...INTERESTS_POOL].sort(() => rand() - 0.5);
+    const interests = shuffled.slice(0, numInterests);
 
     profiles.push({
-      id: `profile-${i}-${seed}`,
-      name: FIRST_NAMES[nameIndex],
+      id: `user-${i}`,
+      name: NAMES[nameIdx],
       age,
-      bio: BIOS[bioIndex],
-      image: `linear-gradient(135deg, hsl(${hue1}, 70%, 60%), hsl(${hue2}, 80%, 50%))`,
-      personality: PERSONALITIES[personalityIndex],
+      bio: BIOS[bioIdx],
+      avatar: `linear-gradient(135deg, hsl(${hue1}, 75%, 55%), hsl(${hue2}, 85%, 45%))`,
+      distance: `${distance} km`,
+      interests,
+      verified,
     });
   }
 
   return profiles;
 }
 
-// AI decision based on personality type
-export function getAIDecision(
-  personality: PersonalityType,
-  playerAction?: SwipeAction
-): SwipeAction {
-  switch (personality) {
-    case 'aggressive':
-      // 80% chance of liking
-      return Math.random() < 0.8 ? 'like' : 'reject';
-
-    case 'cautious':
-      // 25% chance of liking
-      return Math.random() < 0.25 ? 'like' : 'reject';
-
-    case 'random':
-      // True 50/50
-      return Math.random() < 0.5 ? 'like' : 'reject';
-
-    case 'mirror':
-      // 70% chance of mirroring the player's action
-      if (!playerAction) return Math.random() < 0.5 ? 'like' : 'reject';
-      return Math.random() < 0.7 ? playerAction : (playerAction === 'like' ? 'reject' : 'like');
-
-    case 'contrarian':
-      // 70% chance of doing the opposite
-      if (!playerAction) return Math.random() < 0.5 ? 'like' : 'reject';
-      return Math.random() < 0.7
-        ? (playerAction === 'like' ? 'reject' : 'like')
-        : playerAction;
-
-    default:
-      return Math.random() < 0.5 ? 'like' : 'reject';
-  }
+// Simula a decisão da outra pessoa (50-50 com leve viés)
+export function simulateTheirAction(): 'like' | 'pass' {
+  return Math.random() < 0.45 ? 'like' : 'pass';
 }
