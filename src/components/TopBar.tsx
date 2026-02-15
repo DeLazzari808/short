@@ -11,7 +11,7 @@ interface TopBarProps {
 }
 
 export default function TopBar({ points, streak, xp }: TopBarProps) {
-  const { level, progress } = calculateLevel(xp);
+  const { level } = calculateLevel(xp);
 
   return (
     <div className="w-full px-4 py-3 flex items-center justify-between">

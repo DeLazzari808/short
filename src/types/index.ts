@@ -9,6 +9,9 @@ export interface UserProfile {
   verified: boolean;
 }
 
+// Alias for compatibility
+export type SwipeableProfile = UserProfile;
+
 export type SwipeDirection = 'like' | 'pass';
 
 export type PredictionType =
